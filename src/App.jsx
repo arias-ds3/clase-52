@@ -1,7 +1,15 @@
+// src/App.js
 import { useState, useEffect } from "react";
-import Producto from "./components/Producto";
-import Card from "./components/Card";
-import { FaSearch, FaDollarSign, FaList, FaSortAmountDown } from "react-icons/fa";
+import { Button, Image, Card as AntCard } from "antd";
+import {
+  FaSearch,
+  FaDollarSign,
+  FaList,
+  FaSortAmountDown,
+  FaShoppingCart,
+} from "react-icons/fa";
+import useCartStore from "./store/cartStore";
+import Carrito from "./components/Carrito";
 import "./styles/App.css";
 
 function App() {
@@ -11,6 +19,9 @@ function App() {
   const [filtroCategoria, setFiltroCategoria] = useState("");
   const [ordenarPorPrecio, setOrdenarPorPrecio] = useState(false);
   const [categorias, setCategorias] = useState([]);
+  const [visible, setVisible] = useState(false);
+
+  const { carrito, agregarAlCarrito } = useCartStore();
 
   useEffect(() => {
     fetch("https://fakestoreapi.com/products")
@@ -48,9 +59,26 @@ function App() {
     setOrdenarPorPrecio(false);
   };
 
+  const mostrarCarrito = () => {
+    setVisible(true);
+  };
+
+  const cerrarCarrito = () => {
+    setVisible(false);
+  };
+
   return (
     <>
       <h1 className="titulo-tienda">Tienda de Productos</h1>
+
+      <Button
+        type="primary"
+        icon={<FaShoppingCart />}
+        onClick={mostrarCarrito}
+        className="carrito-btn"
+      >
+        Carrito ({carrito.length})
+      </Button>
 
       <div className="filtros-container">
         <h3>Filtrar Productos</h3>
@@ -98,7 +126,7 @@ function App() {
           </div>
           <div className="filtro-item filtro-ordenar">
             <label>
-              <FaSortAmountDown className="icono-filtro" /> Ordenar por precio (menor a mayor):
+              <FaSortAmountDown className="icono-filtro" /> Ordenar por precio:
               <input
                 type="checkbox"
                 checked={ordenarPorPrecio}
@@ -107,22 +135,34 @@ function App() {
             </label>
           </div>
         </div>
-        <button className="limpiar-filtros" onClick={limpiarFiltros}>
+        <Button className="limpiar-filtros" onClick={limpiarFiltros}>
           Limpiar Filtros
-        </button>
+        </Button>
       </div>
 
       <div className="product-list">
         {productosFiltrados.length > 0 ? (
           productosFiltrados.map((producto) => (
-            <Card key={producto.id} orientacion="vertical" className="card">
-              <Producto
-                src={producto.image}
+            <AntCard
+              key={producto.id}
+              hoverable
+              className="product-card"
+              cover={<Image alt={producto.title} src={producto.image} />}
+              actions={[
+                <Button
+                  type="primary"
+                  onClick={() => agregarAlCarrito(producto)}
+                  disabled={carrito.some((item) => item.id === producto.id)}
+                >
+                  Añadir al carrito
+                </Button>,
+              ]}
+            >
+              <AntCard.Meta
                 title={producto.title}
-                price={producto.price}
-                description={producto.description} // Usamos la descripción original en inglés
+                description={`$${producto.price.toFixed(2)}`}
               />
-            </Card>
+            </AntCard>
           ))
         ) : productos.length === 0 ? (
           <p>Cargando productos...</p>
@@ -130,6 +170,8 @@ function App() {
           <p>No se encontraron productos.</p>
         )}
       </div>
+
+      <Carrito visible={visible} onClose={cerrarCarrito} />
     </>
   );
 }
